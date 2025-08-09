@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"sync"
 	"testing"
 )
 
@@ -115,5 +116,27 @@ func TestLRUCache_Len(t *testing.T) {
 	cache.Set("key4", "value4")
 	if cache.list.Len() != 3 {
 		t.Errorf("Expected length 3 after removing, got %d", cache.list.Len())
+	}
+}
+
+// Test for concurrent access and data race
+func TestLRUCache_ConcurrentAccess(t *testing.T) {
+	cache := NewLRUCache(100)
+	var wg sync.WaitGroup
+	for i := range 100 {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			key := string(rune(i))
+			cache.Set(key, i)
+			cache.Get(key)
+		}(i)
+	}
+	wg.Wait()
+	for i := range 100 {
+		key := string(rune(i))
+		if val, ok := cache.Get(key); !ok || val != i {
+			t.Errorf("Concurrency issue for key %s", key)
+		}
 	}
 }
