@@ -9,7 +9,7 @@ type LRUCache struct {
 	capacity int
 	list     *list.List
 	items    map[string]*list.Element
-	mu       sync.RWMutex
+	mu       sync.Mutex
 }
 
 type cacheItem struct {
@@ -27,14 +27,6 @@ func NewLRUCache(capacity int) *LRUCache {
 
 // Getting an element and modifying the doubly linked list
 func (c *LRUCache) Get(key string) (any, bool) {
-	c.mu.RLock()
-	_, exists := c.items[key]
-	c.mu.RUnlock()
-
-	if !exists {
-		return nil, false
-	}
-
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
