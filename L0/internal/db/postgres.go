@@ -266,3 +266,53 @@ func (p *Postgres) Close() {
 	p.pool.Close()
 	log.Println("PostgreSQL connection closed")
 }
+
+func (p *Postgres) GetOrderByUID(ctx context.Context, uid string) (*models.Order, error) {
+	query := `
+		SELECT o.order_uid, o.track_number, o.entry, o.locale, o.internal_signature, 
+               o.customer_id, o.delivery_service, o.shardkey, o.sm_id, o.date_created, o.oof_shard,
+               d.name, d.phone, d.zip, d.city, d.address, d.region, d.email,
+               p.transaction, p.request_id, p.currency, p.provider, p.amount, 
+               p.payment_dt, p.bank, p.delivery_cost, p.goods_total, p.custom_fee
+        FROM orders o
+        JOIN deliveries d ON o.order_uid = d.order_uid
+        JOIN payments p ON o.order_uid = p.order_uid
+		WHERE o.order_uid = $1`
+
+	var order models.Order
+	err := p.pool.QueryRow(ctx, query, uid).Scan(
+		&order.OrderUID, &order.TrackNumber, &order.Entry, &order.Locale, &order.InternalSignature,
+		&order.CustomerID, &order.DeliveryService, &order.Shardkey, &order.SmID, &order.DateCreated, &order.OofShard,
+		&order.Delivery.Name, &order.Delivery.Phone, &order.Delivery.Zip, &order.Delivery.City,
+		&order.Delivery.Address, &order.Delivery.Region, &order.Delivery.Email,
+		&order.Payment.Transaction, &order.Payment.RequestID, &order.Payment.Currency,
+		&order.Payment.Provider, &order.Payment.Amount, &order.Payment.PaymentDt, &order.Payment.Bank,
+		&order.Payment.DeliveryCost, &order.Payment.GoodsTotal, &order.Payment.CustomFee,
+	)
+	if err != nil {
+		return nil, err
+	}
+	itemsQuery := `
+	SELECT order_uid, chrt_id, track_number, price, rid, 
+	name, sale, size, total_price, nm_id, brand, status
+	FROM items
+	WHERE order_uid = $1`
+	rows, err := p.pool.Query(ctx, itemsQuery, uid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []models.Item
+	for rows.Next() {
+		var item models.Item
+		if err := rows.Scan(
+			&item.ChrtID, &item.TrackNumber, &item.Price, &item.RID, &item.Name,
+			&item.Sale, &item.Size, &item.TotalPrice, &item.NmID, &item.Brand, &item.Status,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan item: %w", err)
+		}
+		items = append(items, item)
+	}
+	order.Items = items
+	return &order, nil
+}
