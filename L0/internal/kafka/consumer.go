@@ -34,8 +34,42 @@ func NewConsumer(brokers []string, topic string, db *db.Postgres, cache *cache.L
 }
 
 func (c *Consumer) Start() {
+	c.createTopic()
 	c.wg.Add(1)
 	go c.run()
+}
+
+func (c *Consumer) createTopic() {
+	log.Print(c.reader.Config().Brokers[0])
+	log.Print(c.reader.Config().Topic)
+	// 1. Connecting to Kafka
+	conn, err := kafka.Dial("tcp", c.reader.Config().Brokers[0])
+	if err != nil {
+		log.Printf("Failed to connect to Kafka: %v", err)
+		return
+	}
+	defer conn.Close()
+
+	// 2. Check existing of the topic
+	partitions, err := conn.ReadPartitions(c.reader.Config().Topic)
+	if err == nil && len(partitions) > 0 {
+		log.Printf("Topic '%s' already exists", c.reader.Config().Topic)
+		return
+	}
+
+	// 3. Create topic
+	log.Printf("Creating topic '%s'...", c.reader.Config().Topic)
+	err = conn.CreateTopics(kafka.TopicConfig{
+		Topic:             c.reader.Config().Topic,
+		NumPartitions:     1,
+		ReplicationFactor: 1,
+	})
+
+	if err != nil {
+		log.Printf("Failed to create topic: %v", err)
+	} else {
+		log.Printf("Topic successfully created")
+	}
 }
 
 func (c *Consumer) run() {
@@ -60,6 +94,8 @@ func (c *Consumer) run() {
 
 func (c *Consumer) processMessage(msg kafka.Message) {
 	var order models.Order
+	log.Print("Get a new message: ")
+	log.Print(msg)
 	if err := json.Unmarshal(msg.Value, &order); err != nil {
 		log.Printf("Unmarshal error: %v", err)
 		return
