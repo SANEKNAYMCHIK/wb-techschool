@@ -32,6 +32,7 @@ func NewServer(cache *cache.LRUCache, db *db.Postgres) *Server {
 
 func (s *Server) routes() {
 	s.router.Get("/order/{order_uid}", s.getOrderHandler)
+	s.router.Handle("/*", http.FileServer(http.Dir("./web")))
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
