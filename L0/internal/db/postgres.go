@@ -342,7 +342,7 @@ func (p *Postgres) GetOrderByUID(ctx context.Context, uid string) (*models.Order
 		return nil, err
 	}
 	itemsQuery := `
-	SELECT order_uid, chrt_id, track_number, price, rid, 
+	SELECT chrt_id, track_number, price, rid, 
 	name, sale, size, total_price, nm_id, brand, status
 	FROM items
 	WHERE order_uid = $1`
