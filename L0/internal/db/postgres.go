@@ -79,7 +79,7 @@ func (p *Postgres) SaveOrder(ctx context.Context, order models.Order) error {
 		return fmt.Errorf("commit transaction failed: %w", err)
 	}
 
-	log.Printf("📦 Order %s saved", order.OrderUID)
+	log.Printf("Order %s saved", order.OrderUID)
 	return nil
 }
 

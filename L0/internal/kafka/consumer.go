@@ -93,7 +93,6 @@ func (c *Consumer) run() {
 func (c *Consumer) processMessage(msg kafka.Message) {
 	var order models.Order
 	log.Print("Get a new message: ")
-	log.Print(msg)
 	if err := json.Unmarshal(msg.Value, &order); err != nil {
 		log.Printf("Unmarshal error: %v", err)
 		return
