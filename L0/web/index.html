@@ -2,19 +2,22 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Order Lookup</title>
-    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <h1>Order Information</h1>
-        <div class="search-box">
-            <label for="orderUid">Order UID:</label>
-            <input type="text" id="orderUid" placeholder="Enter Order UID">
-            <button id="searchBtn">Search</button>
-        </div>
+        <form id="searchForm">
+            <div>
+                <label for="orderUid">Order UID:</label>
+                <input type="text" id="orderUid" placeholder="Enter Order UID">
+            </div>
+            <button type="button" id="searchBtn">Search</button>
+        </form>
         <div id="result"></div>
+        <script src="app.js"></script>
     </div>
-    <script src="/app.js"></script>
 </body>
 </html>
