@@ -1,0 +1,114 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: orders-db
+    env_file: .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - main-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Zookeeper
+  zookeeper:
+    image: bitnami/zookeeper:3.8
+    container_name: zookeeper
+    env_file: .env
+    environment:
+      ALLOW_ANONYMOUS_LOGIN: "yes"
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper-data:/bitnami/zookeeper
+    networks:
+      - main-network
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/bitnami/zookeeper/bin/zkServer.sh status"]
+      interval: 10s
+      timeout: 20s
+      retries: 15
+      start_period: 30s
+
+  # Kafka Message Broker
+  kafka:
+    image: bitnami/kafka:3.4
+    container_name: kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_CFG_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_CFG_BROKER_ID: 1
+    ports:
+      - "29092:29092"
+      - "9092:9092"
+    networks:
+      - main-network
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list || exit 0"]
+      interval: 15s
+      timeout: 20s
+      retries: 10
+
+  # Order Processing Service (Go service)
+  order-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: order-service
+    env_file: .env
+    environment:
+      - CONN_STR=${CONN_STR}
+      - KAFKA_BROKERS=${KAFKA_BROKERS}
+      - KAFKA_TOPIC=${KAFKA_TOPIC}
+      - CACHE_CAPACITY=${CACHE_CAPACITY}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - main-network
+
+  # Kafka Producer (generator of test orders)
+  producer:
+    build:
+      context: .
+      dockerfile: Dockerfile.producer
+    container_name: producer
+    env_file: .env
+    environment:
+      - KAFKA_BROKERS=${KAFKA_BROKERS}
+      - KAFKA_TOPIC=${KAFKA_TOPIC}
+    depends_on:
+      - kafka
+    networks:
+      - main-network
+
+networks:
+  main-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  zookeeper-data:
