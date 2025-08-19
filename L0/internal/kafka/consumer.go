@@ -40,8 +40,6 @@ func (c *Consumer) Start() {
 }
 
 func (c *Consumer) createTopic() {
-	log.Print(c.reader.Config().Brokers[0])
-	log.Print(c.reader.Config().Topic)
 	// 1. Connecting to Kafka
 	conn, err := kafka.Dial("tcp", c.reader.Config().Brokers[0])
 	if err != nil {
