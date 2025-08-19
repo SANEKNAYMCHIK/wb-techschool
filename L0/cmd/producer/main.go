@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -16,12 +18,12 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	brokers := []string{"localhost:29092"}
-	topic := "orders"
+	kafkaBrokers := strings.Split(os.Getenv("KAFKA_BROKERS"), ",")
+	topic := os.Getenv("KAFKA_TOPIC")
 
 	// Creating Kafka writer
 	writer := kafka.NewWriter(kafka.WriterConfig{
-		Brokers: brokers,
+		Brokers: kafkaBrokers,
 		Topic:   topic,
 	})
 

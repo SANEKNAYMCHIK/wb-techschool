@@ -16,17 +16,11 @@ import (
 	"github.com/SANEKNAYMCHIK/order-service/internal/db"
 	"github.com/SANEKNAYMCHIK/order-service/internal/httpfiles"
 	"github.com/SANEKNAYMCHIK/order-service/internal/kafka"
-	"github.com/joho/godotenv"
 )
 
 func main() {
 	mainCtx, mainCancel := context.WithCancel(context.Background())
 	defer mainCancel()
-
-	// Loading .env data
-	if err := godotenv.Load(); err != nil {
-		log.Printf("No .env file found, create and write it!")
-	}
 
 	connStr := os.Getenv("CONN_STR")
 	kafkaBrokers := strings.Split(os.Getenv("KAFKA_BROKERS"), ",")
