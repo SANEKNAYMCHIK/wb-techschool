@@ -3,34 +3,34 @@ package main
 import "fmt"
 
 // Интерфейс с пишущей ручкой, который мы ожидаем
-type BlackPen interface {
+type Pen interface {
 	Write(string)
 }
 
-// Существующая ручка с синими чернилами
-type BluePen struct{}
+// Структура с кистью
+type Brush struct{}
 
-func (bp *BluePen) WriteBlue(val string) {
-	fmt.Println("*Blue Ink*\n", val)
+func (bp *Brush) WriteBrush(val string) {
+	fmt.Println("*Brush*\n", val)
 }
 
-// Адаптер, который работает как BlackPen, но использует BluePen
+// Адаптер, который работает как Pen, но использует Brush
 type PenAdapter struct {
-	bluePen *BluePen
+	brush *Brush
 }
 
 func (pa *PenAdapter) Write(val string) {
-	pa.bluePen.WriteBlue(val)
+	pa.brush.WriteBrush(val)
 }
 
-func blackWrite(bp BlackPen) {
+func WritePen(bp Pen) {
 	bp.Write("Hello, World!")
 }
 
 func main() {
-	bluePen := &BluePen{}
+	brush := &Brush{}
 	adapter := &PenAdapter{
-		bluePen: bluePen,
+		brush: brush,
 	}
-	blackWrite(adapter)
+	WritePen(adapter)
 }
