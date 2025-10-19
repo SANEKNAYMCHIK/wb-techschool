@@ -42,4 +42,4 @@ func main() {
 // Может хранить значения любого типа(используется когда тип неизвестен)
 
 // var empty interface{} --- действительно nil
-// var withType error = (*Error)(nil) --- не nil (имеет тип)
+// var withType error = (*os.PathError)(nil) --- не nil (имеет тип)
